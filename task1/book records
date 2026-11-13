@@ -1,0 +1,41 @@
+#include <iostream>
+#include <string>
+using namespace std;
+class Book {
+    string title;
+    string author;
+    int copies;
+public:
+    // Default constructor
+    Book() : Book("Unknown", "Unknown", 0) {}
+    // Parameterized constructor
+    Book(string t, string a, int c)
+        : title(t), author(a), copies(c >= 0 ? c : 0) {}
+
+    // Constructor for donated book
+    Book(string t) : Book(t, "Unknown", 1) {}
+    // Constructor for empty record with copies
+    Book(int c) : Book("Unknown", "Unknown", c) {}
+    // Display function
+    void display() const {
+        cout << "Title: " << title
+             << ", Author: " << author
+             << ", Copies: " << copies << endl;
+    }
+};
+int main() {
+    Book b1;
+    Book b2("C++ Programming", "Bjarne Stroustrup", 5);
+    Book b3("Data Structures");
+    Book b4(3);
+    cout << "Book Records:" << endl;
+    b1.display();
+    b2.display();
+    b3.display();
+    b4.display();
+    // Testing negative copies
+    Book b5("Invalid Book", "Unknown", -5);
+    cout << "\nTesting Negative Copies:" << endl;
+    b5.display();
+    return 0;
+}
