@@ -1,0 +1,128 @@
+#include <iostream>
+#include <iomanip>
+#include <chrono>
+#include <cmath>
+#include <cstdlib>
+using namespace std;
+class Money {
+    long long paise;
+public:
+    Money(long long rupees = 0, int p = 0)
+        : paise(rupees * 100 + p) {}
+    Money operator+(const Money& other) const {
+        return Money(0, paise + other.paise);
+    }
+    Money operator-(const Money& other) const {
+        return Money(0, paise - other.paise);
+    }
+
+    Money& operator+=(const Money& other) {
+        paise += other.paise;
+        return *this;
+    }
+    bool operator==(const Money& other) const {
+        return paise == other.paise;
+    }
+    bool operator<(const Money& other) const {
+        return paise < other.paise;
+    }
+    friend ostream& operator<<(ostream& out, const Money& m) {
+        long long amount = m.paise;
+        if (amount < 0) {
+            out << "-Rs ";
+            amount = -amount;
+        }
+        else {
+            out << "Rs ";
+        }
+        out << amount / 100 << "."
+            << setw(2) << setfill('0') << amount % 100
+            << setfill(' ');
+        return out;
+    }
+    friend istream& operator>>(istream& in, Money& m) {
+        long long rupees;
+        int p;
+        if (in >> rupees >> p) {
+            m.paise = rupees * 100 + p;
+        }
+        return in;
+    }
+};
+int main() {
+    cout << "--- Basic Addition ---" << endl;
+    Money a(120, 75);
+    Money b(79, 25);
+    Money c = a + b;
+    cout << "First amount: " << a << endl;
+    cout << "Second amount: " << b << endl;
+    cout << "Total: " << c << endl;
+    cout << "Equality: " << boolalpha
+         << (c == Money(200)) << endl;
+    cout << "\n--- Paise Carry Test ---" << endl;
+    Money x(0, 75);
+    Money y(0, 50);
+    Money carry = x + y;
+    cout << x << " + " << y << " = " << carry << endl;
+    cout << "\n--- Subtraction Test ---" << endl;
+    Money d(10, 25);
+    Money e(15, 50);
+    Money difference = d - e;
+    cout << d << " - " << e
+         << " = " << difference << endl;
+
+    cout << "\n--- Addition Assignment ---" << endl;
+    Money total(100, 50);
+    total += Money(25, 75);
+    cout << "After += : " << total << endl;
+    cout << "\n--- Comparison Test ---" << endl;
+    cout << "Is Rs 10.25 less than Rs 15.50? "
+         << (d < e) << endl;
+    cout << "\n--- Stream Input Test ---" << endl;
+    Money input;
+    cout << "Enter rupees and paise (example: 50 75): ";
+    if (cin >> input) {
+        cout << "Entered amount: " << input << endl;
+    }
+    cout << "\n--- Bill Calculation ---" << endl;
+    Money item1(120, 75);
+    Money item2(79, 25);
+    Money item3(50, 50);
+    Money bill;
+    bill += item1;
+    bill += item2;
+    bill += item3;
+    cout << "Item 1: " << item1 << endl;
+    cout << "Item 2: " << item2 << endl;
+    cout << "Item 3: " << item3 << endl;
+    cout << "Final bill: " << bill << endl;
+    cout << "\n--- One Million Additions ---" << endl;
+    const int N = 1000000;
+    Money moneyTotal;
+
+    auto start1 = chrono::high_resolution_clock::now();
+    for (int i = 0; i < N; i++) {
+        moneyTotal += Money(0, 1);
+    }
+    auto end1 = chrono::high_resolution_clock::now();
+    long long moneyTime =
+        chrono::duration_cast<chrono::microseconds>(
+            end1 - start1).count();
+    cout << "Money result: " << moneyTotal << endl;
+    cout << "Money time: " << moneyTime
+         << " microseconds" << endl;
+    double doubleTotal = 0.0;
+    auto start2 = chrono::high_resolution_clock::now();
+    for (int i = 0; i < N; i++) {
+        doubleTotal += 0.01;
+    }
+    auto end2 = chrono::high_resolution_clock::now();
+    long long doubleTime =
+        chrono::duration_cast<chrono::microseconds>(
+            end2 - start2).count();
+    cout << fixed << setprecision(12);
+    cout << "Double result: " << doubleTotal << endl;
+    cout << "Double time: " << doubleTime
+        << " microseconds" << endl;
+    return 0;
+}
