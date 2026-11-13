@@ -1,0 +1,31 @@
+#include <iostream>
+#include <string>
+using namespace std;
+class Prescription {
+    int n;
+    string* medicines;
+public:
+    Prescription(int count) : n(count) {
+        medicines = new string[n];
+    }
+    ~Prescription() {
+        delete[] medicines;
+    }
+    void set(int i, const string& m) {
+        medicines[i] = m;
+    }
+    string get(int i) const {
+        return medicines[i];
+    }
+};
+int main() {
+    Prescription p(2);
+    p.set(0, "Paracetamol");
+    p.set(1, "ORS");
+    cout << "Original Prescription: "<< p.get(0) << " " << p.get(1) << endl;
+    Prescription q = p;
+    q.set(1, "Cetirizine");
+    cout << "Original after modifying copy: " << p.get(0) << " " << p.get(1) << endl;
+    cout << "Copied Prescription: " << q.get(0) << " " << q.get(1) << endl;
+    return 0;
+}
