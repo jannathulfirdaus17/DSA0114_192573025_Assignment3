@@ -1,0 +1,105 @@
+#include <iostream>
+#include <string>
+using namespace std;
+class Event {
+    string eventName;
+    int rows, seats;
+    char** seatMap;
+    int booked;
+public:
+    Event(string name, int r, int s)
+        : eventName(name), rows(r), seats(s),
+          seatMap(nullptr), booked(0) {
+        if (rows > 0 && seats > 0) {
+            seatMap = new char*[rows];
+            for (int i = 0; i < rows; i++) {
+                seatMap[i] = new char[seats];
+                for (int j = 0; j < seats; j++) {
+                    seatMap[i][j] = 'O';
+                }
+            }
+        }
+        cout << "Constructor: " << eventName << endl;
+    }
+    void bookSeat(int r, int s) {
+        if (r < 0 || r >= rows || s < 0 || s >= seats) {
+            cout << "Invalid seat position" << endl;
+        }
+        else if (seatMap[r][s] == 'X') {
+            cout << "Seat already booked" << endl;
+        }
+        else {
+            seatMap[r][s] = 'X';
+            booked++;
+            cout << "Seat booked: " << r << ", " << s << endl;
+        }
+    }
+    void cancelSeat(int r, int s) {
+        if (r < 0 || r >= rows || s < 0 || s >= seats) {
+            cout << "Invalid seat position" << endl;
+        }
+        else if (seatMap[r][s] == 'O') {
+            cout << "Seat is not booked" << endl;
+        }
+        else {
+            seatMap[r][s] = 'O';
+            booked--;
+            cout << "Booking cancelled: " << r << ", " << s << endl;
+        }
+    }
+    void display() const {
+        cout << "Seat Map - " << eventName << endl;
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < seats; j++)
+                cout << seatMap[i][j] << " ";
+            cout << endl;
+        }
+    }
+
+    size_t memoryAllocated() const {
+        return rows * sizeof(char*) + rows * seats * sizeof(char);
+    }
+    ~Event() {
+        if (seatMap != nullptr) {
+            for (int i = 0; i < rows; i++)
+                delete[] seatMap[i];
+            delete[] seatMap;
+        }
+        cout << "Destructor: " << eventName
+             << " | Booked seats: " << booked
+             << " | Memory released" << endl;
+    }
+};
+int main() {
+    cout << "--- Stack Object ---" << endl;
+    Event stackEvent("Stack Event", 2, 3);
+    stackEvent.bookSeat(0, 1);
+    stackEvent.bookSeat(1, 2);
+    stackEvent.cancelSeat(0, 1);
+    stackEvent.display();
+    cout << "\n--- Block Scope Object ---" << endl;
+    {
+        Event blockEvent("Block Event", 2, 2);
+        blockEvent.bookSeat(0, 0);
+    }
+    cout << "Exited block" << endl;
+    cout << "\n--- Heap Object ---" << endl;
+    Event* heapEvent = new Event("Heap Event", 3, 3);
+    heapEvent->bookSeat(1, 1);
+    heapEvent->display();
+    delete heapEvent;
+    cout << "Heap object deleted" << endl;
+    cout << "\n--- Memory Measurement ---" << endl;
+    Event e1("10x20 Event", 10, 20);
+    Event e2("100x200 Event", 100, 200);
+    Event e3("1000x2000 Event", 1000, 2000);
+    cout << "10 x 20: " << e1.memoryAllocated() << " bytes" << endl;
+    cout << "100 x 200: " << e2.memoryAllocated() << " bytes" << endl;
+    cout << "1000 x 2000: " << e3.memoryAllocated() << " bytes" << endl;
+    cout << "\n--- Zero Rows Test ---" << endl;
+    Event zeroEvent("Zero Row Event", 0, 5);
+    cout << "Memory allocated: "
+         << zeroEvent.memoryAllocated() << " bytes" << endl;
+    cout << "\nEnd of main" << endl;
+    return 0;
+}
