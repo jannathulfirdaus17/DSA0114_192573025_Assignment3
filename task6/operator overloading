@@ -1,0 +1,286 @@
+
+#include <iostream>
+#include <cstring>
+#include <string>
+#include <chrono>
+#include <iomanip>
+#include <stdexcept>
+
+using namespace std;
+
+class Text {
+private:
+    char* data;
+    size_t length;
+    size_t capacity;
+
+    static int copyCount;
+
+    void reserve(size_t newCapacity) {
+        if (newCapacity <= capacity)
+            return;
+
+        char* newData = new char[newCapacity + 1];
+
+        memcpy(newData, data, length + 1);
+
+        delete[] data;
+        data = newData;
+        capacity = newCapacity;
+    }
+
+public:
+    // Constructor
+    Text(const char* str = "") {
+        if (str == NULL)
+            str = "";
+
+        length = strlen(str);
+        capacity = length;
+
+        data = new char[capacity + 1];
+        memcpy(data, str, length + 1);
+    }
+
+    // Copy constructor
+    Text(const Text& other) {
+        ++copyCount;
+
+        length = other.length;
+        capacity = other.length;
+
+        data = new char[capacity + 1];
+        memcpy(data, other.data, length + 1);
+    }
+
+    // Copy assignment operator
+    Text& operator=(const Text& other) {
+        if (this != &other) {
+            char* newData = new char[other.length + 1];
+            memcpy(newData, other.data, other.length + 1);
+
+            delete[] data;
+
+            data = newData;
+            length = other.length;
+            capacity = other.length;
+        }
+
+        return *this;
+    }
+
+    // Destructor
+    ~Text() {
+        delete[] data;
+    }
+
+    // Append another Text object
+    Text& operator+=(const Text& other) {
+        if (this == &other) {
+            Text temporary(other);
+            return (*this += temporary);
+        }
+
+        size_t newLength = length + other.length;
+
+        if (newLength > capacity) {
+            size_t newCapacity = (capacity == 0) ? 1 : capacity;
+
+            while (newCapacity < newLength)
+                newCapacity *= 2;
+
+            reserve(newCapacity);
+        }
+
+        memcpy(data + length, other.data, other.length + 1);
+        length = newLength;
+
+        return *this;
+    }
+
+    // Concatenation operator
+    friend Text operator+(const Text& a, const Text& b) {
+        Text result;
+
+        delete[] result.data;
+
+        result.length = a.length + b.length;
+        result.capacity = result.length;
+        result.data = new char[result.capacity + 1];
+
+        memcpy(result.data, a.data, a.length);
+        memcpy(result.data + a.length, b.data, b.length + 1);
+
+        return result;
+    }
+
+    // Equality operator
+    bool operator==(const Text& other) const {
+        return strcmp(data, other.data) == 0;
+    }
+
+    // Inequality operator
+    bool operator!=(const Text& other) const {
+        return !(*this == other);
+    }
+
+    // Stream insertion operator
+    friend ostream& operator<<(ostream& out, const Text& text) {
+        out << text.data;
+        return out;
+    }
+
+    size_t size() const {
+        return length;
+    }
+
+    static void resetCopyCount() {
+        copyCount = 0;
+    }
+
+    static int getCopyCount() {
+        return copyCount;
+    }
+};
+
+int Text::copyCount = 0;
+
+// Alternative concatenation using += on a copy
+Text concatByValue(Text a, const Text& b) {
+    a += b;
+    return a;
+}
+
+int main() {
+    cout << "--- Basic Text Operations ---" << endl;
+
+    Text first("Hello");
+    Text second(" World");
+
+    Text combined = first + second;
+
+    cout << "First: " << first << endl;
+    cout << "Second: " << second << endl;
+    cout << "Concatenated: " << combined << endl;
+
+    cout << "\n--- Comparison Tests ---" << endl;
+
+    Text same("Hello");
+
+    cout << "first == same: " << (first == same) << endl;
+    cout << "first != second: " << (first != second) << endl;
+
+    cout << "\n--- Empty Text Tests ---" << endl;
+
+    Text empty1;
+    Text empty2("");
+
+    cout << "Empty text 1: [" << empty1 << "]" << endl;
+    cout << "Empty text 2: [" << empty2 << "]" << endl;
+    cout << "Empty texts equal: " << (empty1 == empty2) << endl;
+
+    Text emptyCombined = empty1 + first;
+    cout << "Empty + Hello: " << emptyCombined << endl;
+
+    cout << "\n--- Long Message Test ---" << endl;
+
+    string longMessage(1000, 'A');
+    Text longText(longMessage.c_str());
+
+    cout << "Long message length: " << longText.size() << endl;
+    cout << "First 20 characters: "
+         << string(longMessage.begin(), longMessage.begin() + 20)
+         << endl;
+
+    cout << "\n--- Copy Assignment Test ---" << endl;
+
+    Text assigned;
+    assigned = first;
+
+    cout << "After assignment: " << assigned << endl;
+
+    cout << "\n--- Self Assignment Test ---" << endl;
+
+    assigned = assigned;
+    cout << "After self-assignment: " << assigned << endl;
+
+    cout << "\n--- Copy Counting: a + b + c ---" << endl;
+
+    Text a("SMS ");
+    Text b("Gateway ");
+    Text c("Message");
+
+    Text::resetCopyCount();
+
+    Text result = a + b + c;
+
+    cout << "Result: " << result << endl;
+    cout << "Copy constructor calls: "
+         << Text::getCopyCount() << endl;
+
+    cout << "\n--- Alternative: Pass by Value and += ---" << endl;
+
+    Text::resetCopyCount();
+
+    Text alternative = concatByValue(
+        concatByValue(a, b), c
+    );
+
+    cout << "Result: " << alternative << endl;
+    cout << "Copy constructor calls: "
+         << Text::getCopyCount() << endl;
+
+    cout << "\n--- Text vs std::string: 100000 Concatenations ---"
+         << endl;
+
+    const int repetitions = 100000;
+
+    Text textResult;
+    Text chunk("x");
+
+    auto textStart = chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < repetitions; ++i) {
+        textResult += chunk;
+    }
+
+    auto textEnd = chrono::high_resolution_clock::now();
+
+    long long textTime =
+        chrono::duration_cast<chrono::microseconds>(
+            textEnd - textStart
+        ).count();
+
+    string standardResult;
+    string standardChunk = "x";
+
+    auto stringStart = chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < repetitions; ++i) {
+        standardResult += standardChunk;
+    }
+
+    auto stringEnd = chrono::high_resolution_clock::now();
+
+    long long stringTime =
+        chrono::duration_cast<chrono::microseconds>(
+            stringEnd - stringStart
+        ).count();
+
+    cout << "Text length: " << textResult.size() << endl;
+    cout << "std::string length: " << standardResult.size() << endl;
+
+    cout << "Text time: " << textTime << " microseconds" << endl;
+    cout << "std::string time: " << stringTime
+         << " microseconds" << endl;
+
+    cout << "\n--- Final Verification ---" << endl;
+
+    cout << "Text and std::string lengths match: "
+         << (textResult.size() == standardResult.size())
+         << endl;
+
+    cout << "Program completed successfully." << endl;
+
+    return 0;
+}
