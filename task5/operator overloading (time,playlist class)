@@ -1,0 +1,184 @@
+#include <iostream>
+#include <iomanip>
+#include <vector>
+#include <string>
+#include <stdexcept>
+#include <chrono>
+using namespace std;
+class Time {
+    long long seconds;
+public:
+    Time(int h = 0, int m = 0, int s = 0) {
+        seconds = h * 3600LL + m * 60LL + s;
+    }
+    // Prefix increment
+    Time& operator++() {
+        ++seconds;
+        return *this;
+    }
+    // Postfix increment
+    Time operator++(int) {
+        Time old = *this;
+        ++seconds;
+        return old;
+    }
+    bool operator==(const Time& other) const {
+        return seconds == other.seconds;
+    }
+    bool operator<(const Time& other) const {
+        return seconds < other.seconds;
+    }
+    long long totalSeconds() const {
+        return seconds;
+    }
+    void display() const {
+        long long h = seconds / 3600;
+        long long m = (seconds % 3600) / 60;
+        long long s = seconds % 60;
+        cout << setfill('0')
+             << setw(2) << h << ":"
+             << setw(2) << m << ":"
+             << setw(2) << s
+             << setfill(' ');
+    }
+};
+class Playlist {
+    vector<string> tracks;
+public:
+    void addTrack(const string& name) {
+        tracks.push_back(name);
+    }
+    // Non-const subscript operator
+    string& operator[](int index) {
+        if (index < 0 || index >= (int)tracks.size()) {
+            throw out_of_range("Playlist index out of range");
+        }
+        return tracks[index];
+    }
+    // Const subscript operator
+    const string& operator[](int index) const {
+        if (index < 0 || index >= (int)tracks.size()) {
+            throw out_of_range("Playlist index out of range");
+        }
+        return tracks[index];
+    }
+    int size() const {
+        return (int)tracks.size();
+    }
+};
+int main() {
+    cout << "--- Prefix and Postfix Test ---" << endl;
+    Time t(0, 0, 5);
+    Time a = t++;
+    Time b = ++t;
+    cout << "Initial time: 00:00:05" << endl;
+    cout << "a after t++: ";
+    a.display();
+    cout << endl;
+    cout << "b after ++t: ";
+    b.display();
+    cout << endl;
+    cout << "Current t: ";
+    t.display();
+    cout << endl;
+    cout << "\n--- Time Comparison ---" << endl;
+    Time t1(0, 1, 10);
+    Time t2(0, 1, 15);
+    cout << "t1: ";
+    t1.display();
+    cout << "\nt2: ";
+    t2.display();
+    cout << "\nt1 == t2: " << boolalpha << (t1 == t2);
+    cout << "\nt1 < t2: " << (t1 < t2) << endl;
+    cout << "\n--- Playlist Test ---" << endl;
+    Playlist playlist;
+    playlist.addTrack("Song A");
+    playlist.addTrack("Song B");
+    playlist.addTrack("Song C");
+    for (int i = 0; i < playlist.size(); i++) {
+        cout << "Track " << i << ": "
+             << playlist[i] << endl;
+    }
+    cout << "\n--- Modify Playlist ---" << endl;
+    playlist[1] = "Updated Song B";
+    cout << "Modified track 1: "
+         << playlist[1] << endl;
+    cout << "\n--- Const Playlist Test ---" << endl;
+    const Playlist& constPlaylist = playlist;
+    cout << "Const playlist track 0: "
+         << constPlaylist[0] << endl;
+    cout << "\n--- Invalid Index Tests ---" << endl;
+    try {
+        cout << playlist[-1] << endl;
+    }
+    catch (const out_of_range& e) {
+        cout << "Negative index: " << e.what() << endl;
+    }
+    try {
+        cout << playlist[playlist.size()] << endl;
+    }
+    catch (const out_of_range& e) {
+        cout << "Size index: " << e.what() << endl;
+    }
+    cout << "\n--- Minute and Hour Rollover ---" << endl;
+    Time minuteTest(0, 0, 59);
+    ++minuteTest;
+    cout << "00:00:59 + 1 second = ";
+    minuteTest.display();
+    cout << endl;
+    Time hourTest(0, 59, 59);
+    ++hourTest;
+    cout << "00:59:59 + 1 second = ";
+    hourTest.display();
+    cout << endl;
+    Time dayTest(0, 59, 59);
+    ++dayTest;
+    cout << "00:59:59 + 1 second = ";
+    dayTest.display();
+    cout << endl;
+    cout << "\n--- Playback Simulation ---" << endl;
+    Playlist music;
+    music.addTrack("Opening Music");
+    music.addTrack("Background Music");
+    music.addTrack("Closing Music");
+    Time position(0, 0, 0);
+    for (int i = 0; i < music.size(); i++) {
+        cout << "Playing: " << music[i] << endl;
+        cout << "Position: ";
+        position.display();
+        cout << endl;
+        ++position;
+    }
+    cout << "\n--- 10 Million Increment Benchmark ---" << endl;
+    const int N = 10000000;
+    volatile long long checksum = 0;
+    Time prefixTime;
+    auto startPrefix = chrono::high_resolution_clock::now();
+    for (int i = 0; i < N; i++) {
+        ++prefixTime;
+        checksum = checksum + prefixTime.totalSeconds();
+    }
+    auto endPrefix = chrono::high_resolution_clock::now();
+    long long prefixDuration =
+        chrono::duration_cast<chrono::microseconds>(
+            endPrefix - startPrefix).count();
+    cout << "Prefix final seconds: "
+         << prefixTime.totalSeconds() << endl;
+    cout << "Prefix time: "
+         << prefixDuration << " microseconds" << endl;
+    Time postfixTime;
+    auto startPostfix = chrono::high_resolution_clock::now();
+    for (int i = 0; i < N; i++) {
+        checksum = checksum + (postfixTime++).totalSeconds();
+    }
+    auto endPostfix = chrono::high_resolution_clock::now();
+    long long postfixDuration =
+        chrono::duration_cast<chrono::microseconds>(
+            endPostfix - startPostfix).count();
+    cout << "Postfix final seconds: "
+         << postfixTime.totalSeconds() << endl;
+    cout << "Postfix time: "
+         << postfixDuration << " microseconds" << endl;
+    cout << "Checksum: " << checksum << endl;
+    return 0;
+}
